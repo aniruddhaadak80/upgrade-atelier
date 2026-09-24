@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "upgrade-atelier": {
+      "url": "https://upgrade-atelier.vercel.app/api/mcp"
+    }
+  }
+}
