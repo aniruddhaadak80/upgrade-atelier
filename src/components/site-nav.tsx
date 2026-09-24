@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, ClipboardCheck, PackageOpen, ScrollText, Terminal } from "lucide-react";
+import { ArrowUpRight, ClipboardCheck, GitBranch, PackageOpen, ScrollText, Terminal } from "lucide-react";
 
 const links = [
   { href: "/watch", label: "Watch desk", icon: ClipboardCheck },
@@ -29,6 +29,10 @@ export function SiteNav() {
               <span>{label}</span>
             </Link>
           ))}
+          <a href="https://github.com/aniruddhaadak80/upgrade-atelier" className="nav-link" target="_blank" rel="noreferrer">
+            <GitBranch size={14} />
+            <span>GitHub repo</span>
+          </a>
           <Link href="/api/health" className="nav-cta">
             API status <ArrowUpRight size={14} />
           </Link>

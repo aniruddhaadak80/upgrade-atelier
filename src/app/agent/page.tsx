@@ -1,12 +1,16 @@
 import { Bot, Braces, ExternalLink, FileJson, ShieldCheck } from "lucide-react";
 import { McpConsole } from "@/components/mcp-console";
+import { RepoPassport } from "@/components/repo-passport";
+import { LIVE_URL, REPO_URL } from "@/lib/openapi";
+import { fetchProjectMetadata } from "@/lib/project";
 
 export const metadata = {
   title: "Agent console",
   description: "A live MCP-style JSON-RPC interface with mutating tools for Upgrade Atelier.",
 };
 
-export default function AgentPage() {
+export default async function AgentPage() {
+  const project = await fetchProjectMetadata();
   return (
     <main className="page-width">
       <section className="page-hero">
@@ -14,11 +18,16 @@ export default function AgentPage() {
         <h1>Let an agent<br />use the desk.</h1>
         <p>The same typed engine that powers the UI is exposed through a small MCP-style endpoint. Discovery is read-only; the create and update tools write real records and seals.</p>
         <div className="hero-actions">
-          <a href="/api/mcp" className="btn-secondary" target="_blank" rel="noreferrer">Open endpoint <ExternalLink size={15} /></a>
+          <a href="/api/mcp" className="btn-secondary" target="_blank" rel="noreferrer">Open discovery <ExternalLink size={15} /></a>
+          <a href="/api/openapi.json" className="btn-quiet" target="_blank" rel="noreferrer">OpenAPI contract <ExternalLink size={13} /></a>
+          <a href="/api/engine" className="btn-quiet" target="_blank" rel="noreferrer">engine policy</a>
           <a href="/api/audit/verify" className="btn-quiet" target="_blank" rel="noreferrer">verify chain</a>
         </div>
       </section>
-      <section className="section-pad" style={{ paddingTop: 8 }}>
+      <section className="page-width" style={{ paddingBottom: 18 }}>
+        <RepoPassport project={project} />
+      </section>
+      <section className="page-width section-pad" style={{ paddingTop: 8 }}>
         <div className="agent-grid">
           <div>
             <div className="paper-panel detail-card">
@@ -29,7 +38,7 @@ export default function AgentPage() {
                 </div>
                 <Bot size={23} color="var(--cobalt)" />
               </div>
-              <p className="muted" style={{ margin: "15px 0 0", fontSize: 13, lineHeight: 1.55 }}>Run the full demo to initialize the server, list all six tools, create a real npm watch record, and replay its chain. The response is shown exactly as returned.</p>
+              <p className="muted" style={{ margin: "15px 0 0", fontSize: 13, lineHeight: 1.55 }}>Run the full demo to initialize the server, list all seven tools, create a real npm watch record, and replay its chain. The response is shown exactly as returned.</p>
               <div style={{ marginTop: 20 }}><McpConsole /></div>
             </div>
           </div>
@@ -40,11 +49,12 @@ export default function AgentPage() {
               <pre className="code-block">{`{
   "mcpServers": {
     "upgrade-atelier": {
-      "url": "/api/mcp"
+      "url": "${LIVE_URL}/api/mcp"
     }
   }
 }`}</pre>
               <p className="muted" style={{ margin: "13px 0 0", fontSize: 11, lineHeight: 1.5 }}>The checked-in <code>public/mcp.json</code> file is ready to adapt with the verified deployment URL.</p>
+              <a className="btn-quiet" style={{ marginTop: 12 }} href={REPO_URL} target="_blank" rel="noreferrer">Open GitHub repository <ExternalLink size={13} /></a>
             </div>
             <div className="paper-panel detail-card">
               <p className="eyebrow">TOOL CONTRACT</p>

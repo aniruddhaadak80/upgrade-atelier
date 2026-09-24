@@ -6,7 +6,7 @@
 
 A keyless, explainable upgrade dossier for npm dependencies — live release signal, deterministic risk factors, migration notes, MCP tools, and replayable SHA-384 seals.
 
-[Open the app](https://upgrade-atelier.vercel.app) · [Health API](https://upgrade-atelier.vercel.app/api/health) · [MCP endpoint](https://upgrade-atelier.vercel.app/api/mcp) · [Audit ledger](https://upgrade-atelier.vercel.app/audit) · [Issues](https://github.com/aniruddhaadak80/upgrade-atelier/issues)
+[Open the app](https://upgrade-atelier.vercel.app) · [GitHub repo](https://github.com/aniruddhaadak80/upgrade-atelier) · [Health API](https://upgrade-atelier.vercel.app/api/health) · [MCP discovery](https://upgrade-atelier.vercel.app/api/mcp) · [OpenAPI](https://upgrade-atelier.vercel.app/api/openapi.json) · [Audit ledger](https://upgrade-atelier.vercel.app/audit) · [Issues](https://github.com/aniruddhaadak80/upgrade-atelier/issues)
 
 [![Live demo](https://img.shields.io/badge/live-demo-1d4ed8?style=flat-square)](https://upgrade-atelier.vercel.app)
 [![MIT](https://img.shields.io/badge/license-MIT-2e765f?style=flat-square)](LICENSE)
@@ -26,7 +26,9 @@ A keyless, explainable upgrade dossier for npm dependencies — live release sig
 - **Live npm release pulse** — normalized public registry metadata with a 15-minute Next.js revalidation window.
 - **Sealed offline fallback** — the first paint and the core experience still work when the registry is unavailable; fallback records are explicitly labeled.
 - **Working CRUD** — create, read, update, refresh, export, and delete watch records through REST and the UI.
-- **MCP-style JSON-RPC** — `initialize`, `tools/list`, and `tools/call`, including mutating create/update/delete tools.
+- **MCP-style JSON-RPC** — GET discovery plus `initialize`, `tools/list`, `tools/call`, `resources/list`, and `resources/read`, including mutating create/update/delete tools.
+- **OpenAPI contract** — machine-readable REST and MCP discovery at `/api/openapi.json`.
+- **Repository passport** — live GitHub topics, stars/forks, commit branch, repository link, and verified deployment link rendered inside the app.
 - **Integrity ledger** — each mutation is sealed as `SHA-384(previousSeal ‖ canonicalJson(payload))` and can be replayed.
 - **Keyless local start** — no environment variables are required locally; Neon is used automatically when `DATABASE_URL` is present.
 - **Fresh visual identity** — paper grain, cobalt ink, vermilion stamps, lemon tape, and motion-led transitions; no globe, ticker, or dark-glass template.
@@ -118,7 +120,7 @@ The score is a prioritization signal, not a vulnerability verdict. A high score 
 
 ## 🔌 Agent interface
 
-The endpoint is a small MCP-style JSON-RPC surface. Discovery is safe to expose; the mutating tools use the same validation and persistence path as the UI.
+The endpoint is a small MCP-style JSON-RPC surface. `GET /api/mcp` returns a browser-friendly discovery document with transport metadata, tools, resources, examples, repository links, and the OpenAPI URL; JSON-RPC methods are sent with `POST`. The mutating tools use the same validation and persistence path as the UI.
 
 ```mermaid
 flowchart TB
@@ -145,11 +147,14 @@ flowchart TB
 Available tools:
 
 - `analyze_package` — deterministic score, factors, snapshot, and analysis seal.
+- `project_passport` — read the public GitHub repository topics, stats, and live links.
 - `list_watches` — read the shared persisted watch desk.
 - `create_watch` — create a real record and audit event.
 - `update_watch` — update status, note, installed version, or refresh the registry.
 - `delete_watch` — remove the record while preserving its delete event.
 - `verify_chain` — replay the full SHA-384 chain.
+
+Readable resources are also available through `resources/list` and `resources/read`: `project://metadata`, `audit://summary`, `engine://policy`, and `openapi://schema`.
 
 ## 🔐 Integrity / seal chain
 
@@ -218,6 +223,17 @@ APP=http://localhost:3000
 curl "$APP/api/health"
 ```
 
+### Project passport and OpenAPI
+
+```bash
+curl "$APP/api/project"
+curl "$APP/api/openapi.json"
+curl "$APP/api/engine"
+curl "$APP/api/mcp"
+```
+
+`/api/project` reads public GitHub repository metadata with a sealed fallback. `/api/engine` exposes the versioned score policy. `/api/openapi.json` is the machine-readable REST contract, while `/api/mcp` GET returns MCP transport discovery and JSON-RPC examples.
+
 ### Live or fallback feed
 
 ```bash
@@ -275,7 +291,7 @@ Use the verified deployment URL in a client config. For local development:
 }
 ```
 
-The checked-in [`public/mcp.json`](public/mcp.json) is a starting point. A raw JSON-RPC call looks like this:
+The checked-in [`public/mcp.json`](public/mcp.json) points at the verified deployment. A raw JSON-RPC call looks like this:
 
 ```bash
 curl -X POST "$APP/api/mcp" \
@@ -283,7 +299,7 @@ curl -X POST "$APP/api/mcp" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
-The in-page console at `/agent` proves the full path with one click: initialize, discover tools, create a real record, and replay the chain.
+The in-page console at `/agent` proves the full path with one click: GET discovery, initialize, discover tools, create a real record, and replay the chain.
 
 ## 🗺️ Project map
 
@@ -295,6 +311,9 @@ The in-page console at `/agent` proves the full path with one click: initialize,
 | `/audit` | Audit event table with payload inspection and chain replay |
 | `/agent` | Live MCP console, tool contract, and client configuration |
 | `/api/health` | Storage mode, record count, and audit status |
+| `/api/project` | Live GitHub repository passport with topics, stats, repo, and live links |
+| `/api/openapi.json` | OpenAPI 3.1 contract for REST and MCP discovery |
+| `/api/engine` | Versioned score weights, bands, cooldown, and evidence contract |
 | `/api/feed` | Cached npm release feed with explicit offline fallback |
 | `/api/analyze` | Deterministic analysis without persistence |
 | `/api/items` | `GET` list and `POST` create watch records |
@@ -302,7 +321,7 @@ The in-page console at `/agent` proves the full path with one click: initialize,
 | `/api/audit` | Recent mutation events |
 | `/api/audit/verify` | Replay the complete seal chain |
 | `/api/export` | Markdown brief or JSON export |
-| `/api/mcp` | JSON-RPC `initialize`, `tools/list`, and `tools/call` |
+| `/api/mcp` | GET discovery plus JSON-RPC `initialize`, `tools/list`, `tools/call`, `resources/list`, and `resources/read` |
 
 Key implementation files:
 
@@ -313,8 +332,11 @@ src/lib/npm.ts         npm registry normalization and revalidation
 src/lib/engine.ts      deterministic scoring and migration steps
 src/lib/canonical.ts   canonical JSON and SHA-384 seals
 src/lib/store.ts       Neon schema, seed data, CRUD, and audit chain
-src/app/api/mcp/       MCP-style JSON-RPC tool surface
-src/components/        Atelier UI, motion, forms, and live console
+src/lib/openapi.ts     OpenAPI document and public project constants
+src/lib/project.ts     GitHub repository passport and fallback
+src/app/api/mcp/       MCP-style JSON-RPC tool and resource surface
+src/app/api/project/   Public repository metadata route
+src/components/        Atelier UI, motion, passport, forms, and live console
 ```
 
 ## 🗺️ Roadmap

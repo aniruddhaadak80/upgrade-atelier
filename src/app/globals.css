@@ -1204,6 +1204,129 @@ button:disabled {
   100% { background-position: -200% 0; }
 }
 
+.repo-passport {
+  padding: 22px;
+}
+
+.passport-top,
+.passport-links,
+.passport-stats,
+.passport-stats > div {
+  display: flex;
+  align-items: center;
+}
+
+.passport-top,
+.passport-links {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.passport-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 23px 0 20px;
+}
+
+.passport-main h2 {
+  margin: 7px 0 0;
+  font-size: 29px;
+  letter-spacing: -0.07em;
+}
+
+.topic-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 15px;
+}
+
+.topic-list span {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--cobalt);
+  background: rgba(29, 78, 216, 0.05);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+}
+
+.passport-stats {
+  gap: 8px;
+}
+
+.passport-stats > div {
+  min-width: 74px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--cobalt);
+  background: rgba(244, 239, 228, 0.52);
+}
+
+.passport-stats strong {
+  max-width: 82px;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.passport-stats span {
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.passport-links {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+}
+
+.passport-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cobalt);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.passport-links a:hover {
+  color: var(--vermilion);
+}
+
+.passport-links .muted {
+  margin-left: auto;
+}
+
+@media (max-width: 680px) {
+  .passport-main {
+    grid-template-columns: 1fr;
+  }
+
+  .passport-stats {
+    width: 100%;
+  }
+
+  .passport-stats > div {
+    flex: 1;
+  }
+
+  .passport-links .muted {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 980px) {
   .hero-grid,
   .detail-layout,

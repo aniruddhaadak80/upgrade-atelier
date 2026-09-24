@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { errorResponse, isRecord } from "@/lib/api";
-import { analysisSeal, analyzeUpgrade } from "@/lib/engine";
+import { analysisSeal, analyzeUpgrade, getEnginePolicy } from "@/lib/engine";
+import { getOpenApiDocument, LIVE_URL, REPO_URL } from "@/lib/openapi";
 import { resolvePackage } from "@/lib/npm";
+import { fetchProjectMetadata } from "@/lib/project";
 import {
   createWatchItem,
   deleteWatchItem,
@@ -26,6 +28,11 @@ const tools: McpToolDefinition[] = [
       required: ["packageName", "currentVersion"],
       properties: { packageName: { type: "string" }, currentVersion: { type: "string" } },
     },
+  },
+  {
+    name: "project_passport",
+    description: "Read the public GitHub repository topics, stats, and verified live links.",
+    inputSchema: { type: "object", properties: {} },
   },
   {
     name: "list_watches",
@@ -95,6 +102,15 @@ function stringArg(args: Record<string, unknown>, key: string): string {
   return value;
 }
 
+function resources(origin: string) {
+  return [
+    { uri: "project://metadata", name: "Project passport", description: "GitHub repository metadata, topics, stats, and live links.", mimeType: "application/json" },
+    { uri: "audit://summary", name: "Audit summary", description: "Current SHA-384 chain verification result.", mimeType: "application/json" },
+    { uri: "engine://policy", name: "Engine policy", description: "Versioned score weights, bands, cooldown, and evidence contract.", mimeType: "application/json" },
+    { uri: "openapi://schema", name: "OpenAPI schema", description: "The machine-readable Upgrade Atelier API contract.", mimeType: "application/json" },
+  ].map((resource) => ({ ...resource, endpoint: `${origin}/api/mcp` }));
+}
+
 async function callTool(name: string, rawArgs: unknown): Promise<unknown> {
   const args = argsRecord(rawArgs);
   if (name === "analyze_package") {
@@ -105,6 +121,7 @@ async function callTool(name: string, rawArgs: unknown): Promise<unknown> {
     const analysis = analyzeUpgrade({ packageName: packageName.trim().toLowerCase(), currentVersion, snapshot });
     return { analysis, snapshot, seal: analysisSeal(analysis, snapshot) };
   }
+  if (name === "project_passport") return await fetchProjectMetadata();
   if (name === "list_watches") return { items: await listWatchItems() };
   if (name === "create_watch") {
     return {
@@ -131,6 +148,36 @@ async function callTool(name: string, rawArgs: unknown): Promise<unknown> {
   throw new Error(`Unknown tool: ${name}`);
 }
 
+async function readResource(uri: string, origin: string): Promise<unknown> {
+  if (uri === "project://metadata") return await fetchProjectMetadata();
+  if (uri === "audit://summary") return await verifyAuditChain();
+  if (uri === "engine://policy") return getEnginePolicy();
+  if (uri === "openapi://schema") return getOpenApiDocument(origin);
+  throw new Error(`Unknown resource: ${uri}`);
+}
+
+export async function GET(request: Request) {
+  const origin = new URL(request.url).origin;
+  return NextResponse.json({
+    service: "upgrade-atelier",
+    protocolVersion: "2024-11-05",
+    transport: "JSON-RPC 2.0 over POST",
+    endpoint: `${origin}/api/mcp`,
+    openapi: `${origin}/api/openapi.json`,
+    repository: REPO_URL,
+    liveUrl: LIVE_URL,
+    capabilities: { tools: { listChanged: false }, resources: { listChanged: false, subscribe: false } },
+    methods: ["initialize", "tools/list", "tools/call", "resources/list", "resources/read"],
+    tools,
+    resources: resources(origin),
+    examples: {
+      initialize: { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05" } },
+      toolsList: { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
+      analyze: { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "analyze_package", arguments: { packageName: "next", currentVersion: "15.5.7" } } },
+    },
+  }, { headers: { "cache-control": "no-store" } });
+}
+
 export async function POST(request: Request) {
   let requestBody: JsonRpcRequest;
   try {
@@ -139,14 +186,27 @@ export async function POST(request: Request) {
     return errorResponse(error);
   }
   const { id, method, params } = requestBody;
+  const origin = new URL(request.url).origin;
   if (method === "initialize") {
     return result(id, {
       protocolVersion: "2024-11-05",
-      capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "upgrade-atelier", version: "1.0.0" },
+      capabilities: { tools: { listChanged: false }, resources: { listChanged: false, subscribe: false } },
+      serverInfo: { name: "upgrade-atelier", version: "1.1.0" },
     });
   }
   if (method === "tools/list") return result(id, { tools });
+  if (method === "resources/list") return result(id, { resources: resources(origin) });
+  if (method === "resources/read") {
+    const resource = argsRecord(params);
+    const uri = typeof resource.uri === "string" ? resource.uri : "";
+    if (!uri) return failure(id, -32602, "Resource uri is required.");
+    try {
+      const value = await readResource(uri, origin);
+      return result(id, { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(value, null, 2) }] });
+    } catch (error) {
+      return failure(id, -32000, error instanceof Error ? error.message : "Resource read failed.");
+    }
+  }
   if (method !== "tools/call") return failure(id, -32601, "Method not found.");
 
   const call = argsRecord(params);

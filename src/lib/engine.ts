@@ -8,6 +8,31 @@ interface VersionParts {
   prerelease: string;
 }
 
+export const ENGINE_POLICY = {
+  version: "1.1.0",
+  name: "atelier-release-gate",
+  weights: {
+    semverDistance: 40,
+    releaseCooldown: 20,
+    maintenanceSignal: 20,
+    packageSurface: 10,
+    metadataQuality: 10,
+  },
+  bands: {
+    low: { max: 29, action: "ship behind the normal test gate" },
+    watch: { max: 54, action: "observe before production" },
+    review: { max: 79, action: "run a deliberate migration pass" },
+    hold: { max: 100, action: "verify provenance and pause" },
+  },
+  cooldownDays: 7,
+  requiredEvidence: ["version-distance", "release-cooldown", "maintenance-signal", "package-surface", "metadata-quality"],
+  interpretation: "A prioritization signal for human review, never a vulnerability or trust verdict.",
+} as const;
+
+export function getEnginePolicy(): typeof ENGINE_POLICY {
+  return ENGINE_POLICY;
+}
+
 function parseVersion(value: string): VersionParts {
   const match = value.trim().replace(/^v/, "").match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?/);
   return {

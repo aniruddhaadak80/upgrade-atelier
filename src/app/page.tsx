@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight, Braces, FileCheck2, GitBranch, ShieldCheck, Workflow } from "lucide-react";
 import { LandingComposer } from "@/components/landing-composer";
 import { ReleaseFeed } from "@/components/release-feed";
+import { RepoPassport } from "@/components/repo-passport";
+import { fetchProjectMetadata } from "@/lib/project";
 import { fetchReleaseFeed } from "@/lib/npm";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +14,7 @@ export const metadata = {
 };
 
 export default async function Home() {
-  const feed = await fetchReleaseFeed();
+  const [feed, project] = await Promise.all([fetchReleaseFeed(), fetchProjectMetadata()]);
   return (
     <main>
       <section className="page-width hero-grid">
@@ -41,6 +43,10 @@ export default async function Home() {
           <p>One public feed, normalized into a small working surface. Click a card to inspect the upstream package, then save the exact version you use.</p>
         </div>
         <ReleaseFeed feed={feed} />
+      </section>
+
+      <section className="page-width" style={{ paddingBottom: 18 }}>
+        <RepoPassport project={project} />
       </section>
 
       <section className="page-width section-pad" style={{ paddingTop: 20 }}>

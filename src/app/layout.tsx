@@ -42,6 +42,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <a href="/api/health">Health</a>
               <a href="/api/feed">Live feed</a>
               <a href="/api/mcp">MCP endpoint</a>
+              <a href="/api/openapi.json">OpenAPI</a>
+              <a href="https://github.com/aniruddhaadak80/upgrade-atelier">GitHub repo</a>
+              <a href="https://upgrade-atelier.vercel.app">Live app</a>
               <a href="/audit">Audit ledger</a>
             </div>
           </div>

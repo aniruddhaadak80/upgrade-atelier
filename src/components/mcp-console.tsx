@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { CheckCircle2, Copy, LoaderCircle, Play, Terminal } from "lucide-react";
 
+async function getDiscovery(): Promise<unknown> {
+  const response = await fetch("/api/mcp");
+  const result = (await response.json()) as unknown;
+  if (!response.ok) throw new Error("MCP discovery failed.");
+  return result;
+}
+
 async function postRpc(body: Record<string, unknown>): Promise<Record<string, unknown>> {
   const response = await fetch("/api/mcp", {
     method: "POST",
@@ -15,7 +22,7 @@ async function postRpc(body: Record<string, unknown>): Promise<Record<string, un
 }
 
 export function McpConsole() {
-  const [log, setLog] = useState("Ready. Initialize the server, or run the full demo to create a real watch record.");
+  const [log, setLog] = useState("Ready. GET the discovery document, initialize the server, or run the full demo to create a real watch record.");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -50,8 +57,16 @@ export function McpConsole() {
     }
   }
 
+  async function discover() {
+    try {
+      append("GET /api/mcp", await getDiscovery());
+    } catch (error) {
+      append("discovery error", { message: error instanceof Error ? error.message : "MCP discovery failed." });
+    }
+  }
+
   async function copyConfig() {
-    const config = JSON.stringify({ mcpServers: { "upgrade-atelier": { url: "/api/mcp" } } }, null, 2);
+    const config = JSON.stringify({ mcpServers: { "upgrade-atelier": { url: `${window.location.origin}/api/mcp` } } }, null, 2);
     await navigator.clipboard.writeText(config);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
@@ -65,6 +80,7 @@ export function McpConsole() {
       </div>
       <div className="console-body" dangerouslySetInnerHTML={{ __html: log.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, '<span class="accent">"$1"</span>') }} />
       <div className="console-actions">
+        <button type="button" onClick={discover} disabled={busy}>GET discovery</button>
         <button type="button" onClick={() => call("initialize", { method: "initialize", params: { protocolVersion: "2024-11-05" } })} disabled={busy}>initialize</button>
         <button type="button" onClick={() => call("tools/list", { method: "tools/list", params: {} })} disabled={busy}>tools/list</button>
         <button type="button" onClick={() => call("tools/call create_watch", { method: "tools/call", params: { name: "create_watch", arguments: { packageName: "zod", currentVersion: "3.22.4", note: "Created from the live MCP console." } } })} disabled={busy}>mutate: create watch</button>
