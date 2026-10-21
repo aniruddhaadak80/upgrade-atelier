@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { errorResponse, requestJson } from "@/lib/api";
 import { analysisSeal, analyzeUpgrade } from "@/lib/engine";
 import { resolvePackage } from "@/lib/npm";
+import { normalizedVersion } from "@/lib/store";
 
 export async function POST(request: Request) {
   try {
@@ -9,9 +10,12 @@ export async function POST(request: Request) {
     const packageName = typeof body.packageName === "string" ? body.packageName : "";
     const currentVersion = typeof body.currentVersion === "string" ? body.currentVersion : "";
     if (!packageName || !currentVersion) throw new Error("packageName and currentVersion are required.");
+    // Reject a version the engine cannot read, instead of letting it fall back
+    // to 0.0.0 and report a fictional "major boundary".
+    const version = normalizedVersion(currentVersion);
     const snapshot = await resolvePackage(packageName);
     if (!snapshot) return NextResponse.json({ error: "Package not found in npm or the offline set." }, { status: 404 });
-    const analysis = analyzeUpgrade({ packageName: packageName.trim().toLowerCase(), currentVersion, snapshot });
+    const analysis = analyzeUpgrade({ packageName: packageName.trim().toLowerCase(), currentVersion: version, snapshot });
     return NextResponse.json({ analysis, snapshot, seal: analysisSeal(analysis, snapshot) });
   } catch (error) {
     return errorResponse(error);

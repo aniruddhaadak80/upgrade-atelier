@@ -8,6 +8,7 @@ import {
   createWatchItem,
   deleteWatchItem,
   listWatchItems,
+  normalizedVersion,
   updateWatchItem,
   verifyAuditChain,
 } from "@/lib/store";
@@ -115,7 +116,9 @@ async function callTool(name: string, rawArgs: unknown): Promise<unknown> {
   const args = argsRecord(rawArgs);
   if (name === "analyze_package") {
     const packageName = stringArg(args, "packageName");
-    const currentVersion = stringArg(args, "currentVersion");
+    // Reject a version the engine cannot read, instead of letting it fall back
+    // to 0.0.0 and report a fictional "major boundary".
+    const currentVersion = normalizedVersion(stringArg(args, "currentVersion"));
     const snapshot = await resolvePackage(packageName);
     if (!snapshot) throw new Error("Package not found in npm or the offline set.");
     const analysis = analyzeUpgrade({ packageName: packageName.trim().toLowerCase(), currentVersion, snapshot });

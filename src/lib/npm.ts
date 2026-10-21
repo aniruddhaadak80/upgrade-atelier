@@ -116,9 +116,12 @@ export async function fetchReleaseFeed(
   names: readonly string[] = FEED_PACKAGE_NAMES,
 ): Promise<FeedResponse> {
   const results = await Promise.all(names.map((name) => fetchPackageSnapshot(name)));
-  const live = results
-    .filter((snapshot): snapshot is PackageSnapshot => snapshot !== null)
-    .map(toSignal);
+  const live: ReleaseSignal[] = [];
+  const missing: string[] = [];
+  results.forEach((snapshot, index) => {
+    if (snapshot) live.push(toSignal(snapshot));
+    else missing.push(names[index]);
+  });
   const fallback = getFallbackSignals();
 
   if (live.length === 0) {
@@ -130,11 +133,26 @@ export async function fetchReleaseFeed(
     };
   }
 
+  // The packages whose live lookup failed fall back to their sealed sample
+  // record, so the feed still has one entry per package and the notice is
+  // true. The fallback records carry `source: "fallback"`, so a reader can
+  // still tell them apart from the live ones.
+  const fallbackByPackage = new Map(fallback.map((signal) => [signal.packageName, signal]));
+  const items = [
+    ...live,
+    ...missing
+      .map((name) => fallbackByPackage.get(name))
+      .filter((signal): signal is ReleaseSignal => Boolean(signal)),
+  ];
+
   return {
-    items: live,
+    items,
     source: "npm",
     fetchedAt: new Date().toISOString(),
-    notice: live.length < names.length ? "Some registry lookups fell back to the sealed sample set." : "Live npm registry metadata.",
+    notice:
+      missing.length > 0
+        ? `Live npm registry metadata. ${missing.length} package lookup${missing.length === 1 ? "" : "s"} fell back to the sealed sample set.`
+        : "Live npm registry metadata.",
   };
 }
 
