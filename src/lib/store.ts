@@ -283,8 +283,15 @@ function normalizedPackageName(value: string): string {
   return name;
 }
 
-function normalizedVersion(value: string): string {
-  const version = value.trim();
+/**
+ * Validate and normalise a semver-ish version string.
+ *
+ * Exported so the analyze endpoints can reject a version that the engine
+ * would otherwise silently read as `0.0.0`. A leading `v` is accepted and
+ * stripped, which is the form `parseVersion()` in the engine understands.
+ */
+export function normalizedVersion(value: string): string {
+  const version = value.trim().replace(/^v/, "");
   if (!/^\d+(?:\.\d+){0,2}(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
     throw new Error("Enter a version such as 5.8.3 or 5.8.3-rc.1.");
   }
